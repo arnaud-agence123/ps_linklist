@@ -26,6 +26,7 @@
 
 namespace PrestaShop\Module\LinkList\Controller\Admin\Improve\Design;
 
+//use PrestaShop\PrestaShop\Adapter\LegacyContext;
 use PrestaShop\Module\LinkList\Core\Grid\LinkBlockGridFactory;
 use PrestaShop\Module\LinkList\Core\Search\Filters\LinkBlockFilters;
 use PrestaShop\Module\LinkList\Form\LinkBlockFormDataProvider;
@@ -63,8 +64,9 @@ class LinkBlockController extends FrameworkBundleAdminController
     {
         //Get hook list, then loop through hooks setting it in in the filter
         /** @var LinkBlockRepository $repository */
+		$shopListIds = $this->getContext()->shop->getContextListShopID();
         $repository = $this->get('prestashop.module.link_block.repository');
-        $hooks = $repository->getHooksWithLinks();
+        $hooks = $repository->getHooksWithLinks($shopListIds);
 
         $filtersParams = $this->buildFiltersParamsByRequest($request);
 
@@ -246,10 +248,12 @@ class LinkBlockController extends FrameworkBundleAdminController
      */
     private function processForm(Request $request, $successMessage, $linkBlockId = null)
     {
+		$shopIds = $this->getContext()->shop->getContextListShopID();
         /** @var LinkBlockFormDataProvider $formProvider */
         $formProvider = $this->get('prestashop.module.link_block.form_provider');
         $formProvider->setIdLinkBlock($linkBlockId);
-
+		$formProvider->setShopId($shopIds);
+		
         /** @var FormHandlerInterface $formHandler */
         $formHandler = $this->get('prestashop.module.link_block.form_handler');
         $form = $formHandler->getForm();
@@ -285,6 +289,7 @@ class LinkBlockController extends FrameworkBundleAdminController
     {
         $filtersParams = array_merge(LinkBlockFilters::getDefaults(), $request->query->all());
         $filtersParams['filters']['id_lang'] = $this->getContext()->language->id;
+		$filtersParams['filters']['id_shop'] = $this->getContext()->shop->getContextListShopID();
 
         return $filtersParams;
     }

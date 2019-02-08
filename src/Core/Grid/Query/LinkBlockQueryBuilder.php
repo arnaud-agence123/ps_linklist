@@ -94,6 +94,7 @@ final class LinkBlockQueryBuilder extends AbstractDoctrineQueryBuilder
             ->createQueryBuilder()
             ->from($this->dbPrefix . 'link_block', 'lb')
             ->innerJoin('lb', $this->dbPrefix . 'link_block_lang', 'lbl', 'lb.id_link_block = lbl.id_link_block')
+            ->innerJoin('lb', $this->dbPrefix . 'link_block_shop', 'lbls', 'lbls.id_link_block = lbl.id_link_block')
             ->leftJoin('lb', $this->dbPrefix . 'hook', 'h', 'lb.id_hook = h.id_hook');
 
         foreach ($filters as $name => $value) {
@@ -105,7 +106,19 @@ final class LinkBlockQueryBuilder extends AbstractDoctrineQueryBuilder
 
                 continue;
             }
+            
+            if ('id_shop' === $name) {	
+				$orStatements = $qb->expr()->orX();
+				foreach($value as $val){
+					$orStatements->add(
+						$qb->expr()->eq('lbls.id_shop', $val)
+					);
+				}
+				$qb->andWhere($orStatements);
 
+                continue;
+            }
+            
             if ('id_hook' === $name) {
                 $qb
                     ->andWhere("h.id_hook = :$name")

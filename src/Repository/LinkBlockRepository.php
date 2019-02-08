@@ -80,16 +80,26 @@ class LinkBlockRepository
 
     /**
      * Returns the list of hook with associated Link blocks.
-     *
+     * @param array $shopListIds
+     * 
      * @return array
      */
-    public function getHooksWithLinks()
+    public function getHooksWithLinks($shopListIds)
     {
         $qb = $this->connection->createQueryBuilder();
         $qb
             ->select('h.id_hook, h.name, h.title')
             ->from($this->dbPrefix . 'link_block', 'lb')
             ->leftJoin('lb', $this->dbPrefix . 'hook', 'h', 'lb.id_hook = h.id_hook')
+            ->leftJoin('lb', $this->dbPrefix . 'link_block_shop', 'lbs', 'lb.id_link_block = lbs.id_link_block');
+            
+        foreach($shopListIds as $shopId){    
+			$qb
+				->orWhere('lbs.id_shop = :shopId')
+				->setParameter('shopId', $shopId);
+        }
+        
+        $qb
             ->groupBy('h.id_hook')
             ->orderBy('h.name')
         ;
@@ -99,14 +109,16 @@ class LinkBlockRepository
 
     /**
      * @param array $data
+     * @param array $shopListIds
      *
      * @return string
      *
      * @throws DatabaseException
      */
-    public function create(array $data)
+    public function create(array $data, $shopListIds=null)
     {
         $idHook = $data['id_hook'];
+		
         $maxPosition = $this->getHookMaxPosition($idHook);
 
         $qb = $this->connection->createQueryBuilder();
@@ -129,7 +141,11 @@ class LinkBlockRepository
 
         $this->executeQueryBuilder($qb, 'Link block error');
         $linkBlockId = $this->connection->lastInsertId();
-
+		
+		foreach($shopListIds as $shopId){
+			$this->updateInShop($linkBlockId, $shopId);
+        }
+        
         $this->updateLanguages($linkBlockId, $data['block_name'], $data['custom_content']);
 
         return $linkBlockId;
@@ -388,4 +404,28 @@ class LinkBlockRepository
 
         return $qb->execute()->fetchColumn(0);
     }
+    
+    /**
+     * @param int $linkBlockId
+     * @param int $shopId
+     * 
+     * @return bool|string
+     */
+    private function updateInShop($linkBlockId, $shopId){
+			
+		$qb = $this->connection->createQueryBuilder();			
+		$qb
+			->insert($this->dbPrefix . 'link_block_shop')
+			->values([
+				'id_link_block' => ':linkBlockId',
+				'id_shop' => ':shopId',
+			])
+			->setParameters([
+				'linkBlockId' => $linkBlockId,
+				'shopId' => $shopId
+			]);
+		
+        return $this->executeQueryBuilder($qb, 'Link block error');	
+		
+	}
 }

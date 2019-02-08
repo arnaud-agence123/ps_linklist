@@ -68,12 +68,25 @@ class LegacyLinkBlockRepository
     public function getByIdHook($id_hook)
     {
         $id_hook = (int) $id_hook;
-
+		$shopIds = $this->shop->getContextListShopID();
+		
         $sql = "SELECT cb.`id_link_block`
                     FROM {$this->db_prefix}link_block cb
-                    WHERE `id_hook` = $id_hook
-                    ORDER by cb.`position`
-                ";
+                    LEFT JOIN {$this->db_prefix}link_block_shop cs ON cb.`id_link_block` = cs.`id_link_block`
+                    WHERE `id_hook` = $id_hook AND ";
+		
+		//Add shop context
+		$sql_shop = '(';
+		foreach($shopIds as $shopId){
+			$sql_shop.= " cs.`id_shop` = $shopId ";
+			$sql_shop.= " OR "; 
+		}
+		
+		$sql_shops = rtrim($sql_shop, 'OR ');
+		$sql_shops.= ')';
+		
+		$sql.= $sql_shops . " ORDER by cb.`position` ";
+		
         $ids = $this->db->executeS($sql);
 
         $cmsBlock = array();

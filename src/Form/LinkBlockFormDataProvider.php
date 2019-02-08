@@ -160,9 +160,9 @@ class LinkBlockFormDataProvider implements FormDataProviderInterface
             }
         }
         $linkBlock['custom_content'] = $customContent;
-
+		
         if (empty($linkBlock['id_link_block'])) {
-            $linkBlockId = $this->repository->create($linkBlock);
+            $linkBlockId = $this->repository->create($linkBlock, $this->shopId);
             $this->setIdLinkBlock($linkBlockId);
         } else {
             $linkBlockId = $linkBlock['id_link_block'];
@@ -193,6 +193,18 @@ class LinkBlockFormDataProvider implements FormDataProviderInterface
 
         return $this;
     }
+
+    /**
+     * @param int $idLinkBlock
+     *
+     * @return LinkBlockFormDataProvider
+     */
+    public function setShopId($shopIds)
+    {
+        $this->shopId = $shopIds;
+
+        return $this;
+    }    
 
     /**
      * @param array $data
